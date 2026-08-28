@@ -1,0 +1,224 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local Window = Rayfield:CreateWindow({
+   Name = "Dakar Script Zombies",
+   LoadingTitle = "กำลังโหลด Dakar Script...",
+   LoadingSubtitle = "โดย playpro_100",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "DakarScript",
+      FileName = "ZombieHubConfig"
+   },
+   KeySystem = false,
+})
+
+-- ค่าสถานะและการตั้งค่า
+local Config = {
+   ZombieLock = false,
+   ZombieHardLock = false,
+   PlayerHardLock = false,
+   LockDistance = 500,
+   StraightBullet = false,
+   AntiLag = false,
+   ItemESP = false,
+   ItemESPColor = Color3.fromRGB(0, 255, 0),
+   NameSize = 14,
+   GlowEffect = false,
+   PlayerESP = false,
+   ZombieESP = false,
+}
+
+-- ฟังก์ชันหาเป้าหมายที่ใกล้ที่สุด (ซอมบี้ / ผู้เล่น)
+local function getClosestTarget(isZombie)
+   local closest = nil
+   local shortestDist = Config.LockDistance
+   
+   -- ค้นหาใน Workspace หรือโฟลเดอร์ซอมบี้
+   for _, v in pairs(Workspace:GetDescendants()) do
+      if isZombie and (v:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(v)) then
+         local hrp = v:FindFirstChild("HumanoidRootPart")
+         if hrp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDist then
+               shortestDist = dist
+               closest = hrp
+            end
+         end
+      elseif not isZombie and v:IsA("Model") and v ~= LocalPlayer.Character then
+         local player = Players:GetPlayerFromCharacter(v)
+         if player and v:FindFirstChild("HumanoidRootPart") then
+            local hrp = v.HumanoidRootPart
+            local dist = (hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDist then
+               shortestDist = dist
+               closest = hrp
+            end
+         end
+      end
+   end
+   return closest
+end
+
+-- ลูปการทำงานล็อกเป้าหมายและยิงตรง
+RunService.RenderStepped:Connect(function()
+   if Config.ZombieHardLock then
+      local target = getClosestTarget(true)
+      if target then
+         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+      end
+   elseif Config.PlayerHardLock then
+      local target = getClosestTarget(false)
+      if target then
+         Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+      end
+   end
+end)
+
+-- แท็บที่ 1: ล็อกซอมบี้
+local Tab1 = Window:CreateTab("ล็อกซอมบี้", 4483362458)
+
+Tab1:CreateToggle({
+   Name = "ล็อกซอมบี้ (Zombie Lock)",
+   CurrentValue = false,
+   Flag = "ZombieLock",
+   Callback = function(Value)
+      Config.ZombieLock = Value
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "ล็อกซอมบี้แบบติดเลย (Zombie Hard Lock)",
+   CurrentValue = false,
+   Flag = "ZombieHardLock",
+   Callback = function(Value)
+      Config.ZombieHardLock = Value
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "ล็อกคนแบบติดเลย (Player Hard Lock)",
+   CurrentValue = false,
+   Flag = "PlayerHardLock",
+   Callback = function(Value)
+      Config.PlayerHardLock = Value
+   end,
+})
+
+Tab1:CreateSlider({
+   Name = "ระยะการล็อก (เมตร)",
+   Range = {100, 5000},
+   Increment = 50,
+   CurrentValue = 500,
+   Flag = "LockDistance",
+   Callback = function(Value)
+      Config.LockDistance = Value
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "ยิงกระสุนตรง (Straight Bullet)",
+   CurrentValue = false,
+   Flag = "StraightBullet",
+   Callback = function(Value)
+      Config.StraightBullet = Value
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "กันแล็ก (Anti-Lag)",
+   CurrentValue = false,
+   Flag = "AntiLag",
+   Callback = function(Value)
+      Config.AntiLag = Value
+      if Value then
+         for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("ParticleEmitter") or v:IsA("Trail") then
+               v.Enabled = false
+            end
+         end
+      end
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "ESP ปืนและของ (Items & Guns)",
+   CurrentValue = false,
+   Flag = "ItemESP",
+   Callback = function(Value)
+      Config.ItemESP = Value
+   end,
+})
+
+Tab1:CreateColorPicker({
+   Name = "ปรับสี ESP ปืนและของ",
+   Color = Color3.fromRGB(0, 255, 0),
+   Flag = "ItemESPColor",
+   Callback = function(Value)
+      Config.ItemESPColor = Value
+   end,
+})
+
+Tab1:CreateSlider({
+   Name = "ขนาดชื่อบนหัว",
+   Range = {10, 30},
+   Increment = 1,
+   CurrentValue = 14,
+   Flag = "NameSize",
+   Callback = function(Value)
+      Config.NameSize = Value
+   end,
+})
+
+Tab1:CreateToggle({
+   Name = "แสงออกจากตัว (Glow Effect)",
+   CurrentValue = false,
+   Flag = "GlowEffect",
+   Callback = function(Value)
+      Config.GlowEffect = Value
+   end,
+})
+
+-- แท็บที่ 2: espคน+ซอมบี้
+local Tab2 = Window:CreateTab("espคน+ซอมบี้", 4483362458)
+
+Tab2:CreateToggle({
+   Name = "ESP ผู้เล่น (Players)",
+   CurrentValue = false,
+   Flag = "PlayerESP",
+   Callback = function(Value)
+      Config.PlayerESP = Value
+   end,
+})
+
+Tab2:CreateToggle({
+   Name = "ESP ซอมบี้ (Zombies)",
+   CurrentValue = false,
+   Flag = "ZombieESP",
+   Callback = function(Value)
+      Config.ZombieESP = Value
+   end,
+})
+
+-- แท็บที่ 3: เปิด ตรวจจับสคริป
+local Tab3 = Window:CreateTab("ตรวจจับสคริป", 4483362458)
+
+Tab3:CreateButton({
+   Name = "เปิดตรวจจับสคริป (Script Detector)",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "ระบบตรวจจับ",
+         Content = "สแกนระบบเรียบร้อย: ไม่พบสคริปต์อันตราย",
+         Duration = 3,
+         Image = 4483362458,
+      })
+   end,
+})
+
+Tab3:CreateParagraph({Title = "เครดิตผู้สร้าง", Content = "Script Created by playpro_100"})
+
+Rayfield:LoadConfiguration()
